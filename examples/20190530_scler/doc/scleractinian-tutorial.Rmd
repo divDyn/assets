@@ -1,5 +1,5 @@
 ---
-# Diversity Dynamics of scleractinian corals with divDyn 0.7.1
+# Diversity Dynamics of scleractinian corals with divDyn 0.8.0
 
 Adam T. Kocsis
  
@@ -28,7 +28,7 @@ The snippet above instructs the Paleobiology Database download API to compile al
 As this format is relatively inefficient, it is better practice to store the data in a binary format. You can read this file with the following line of code:
 
 ```
-dat <- read.csv("D:/pbdb_data.csv", sep=",", header=TRUE, stringsAsFactors=FALSE)
+dat <- read.csv("pbdb_data.csv", sep=",", header=TRUE, stringsAsFactors=FALSE)
 ```
 save it exactly the way it was imported with a  ``save()`` function:
 ```
@@ -66,24 +66,27 @@ load(url("https://github.com/divDyn/assets/raw/master/examples/20190530_scler/da
 
 This funciton call will load the data and attach the object to the global namespace with the same name with which it was saved.
 
-The analyses will be conducted at the level of genera. The entries that have no valid genus names in the PaleoDB can be omitted at this stage. They will not provide us any information about the evolution of the group.
+The analyses will be conducted at the level of genera. 
+
+The entries that have no valid genus names in the PaleoDB can be omitted at this stage. They will not provide us any information about the evolution of the group.
 
 ```{r omitQuo, echo= TRUE, eval=TRUE}
 # rename the taxon name
 dat<- dat[!dat$genus=="", ]
 ```
 
+The  dataset should be cleaned as much as possible at this stage, for didactic purposes and for keeping things simple, this step is skipped in this tutorial.
+
+
 ## Stratigraphic resolution
 
 Every colleciton in the the PaleoDB has a user entered ``'early_interval'`` and ``'late_interval'`` field. These are fields are used to place the collection in stratigraphy/geological time. The ``'early_interval'`` collection is mandatory for every entry while the ``'late_interval'`` is only necessary if the taxon does not fit in the interval specified as ``'early_interval'``. Otherwise the ``'late_interval'`` field is blank (empty quotes: ``""``).
 
-The divDyn package uses two frequently used, discrete time scales that we use as the finest stratiigraphic resolution of our analyses: the stage level time scale (``stages``, 95 bins) and the ten million year time scale (``bins``, 49 bins). These can be attached with the ``data()`` function:
-
-*Note that the ``bins`` will be renamed to ``b10s`` in the divDyn 0.8.*
+The divDyn package uses two frequently used, discrete time scales that we use as the finest stratiigraphic resolution of our analyses: the stage level time scale (``stages``, 95 bins) and the ten million year time scale (``tens``, 49 bins). These can be attached with the ``data()`` function:
 
 ```{r ts, echo= TRUE, eval=TRUE}
 data(stages)
-data(bins)
+data(tens)
 ```
 
 These will be useful for plotting as they contain the age estimates for the intervals, but they are not too useful for finding which interval the ``'early_interval'`` and ``'late_interval'`` fields point to. This can be found in the ``keys`` object.
@@ -135,7 +138,7 @@ stgCondition <- c(
 
 Now every occurrence entry either has a single integer number in the ``stg`` column, or ``NA`` as its interval identifier. Note that the code above cannot be used for Cambrian and Ordovician occurrences due to stratigraphic problems. If you are interested in assigning these to stage-level intervals, we recommend to take a look at the vignette we wrote that describes global marine, Phanerozoic scale analyses:
 ```
-https://github.com/divDyn/ddPhanero/blob/master/doc/0.4.1/dd_phanero.pdf
+https://github.com/divDyn/ddPhanero/blob/master/doc/1.0.1/dd_phanero.pdf
 ```
 
 The assignments can be repeated for the 10-million year bins with the following commands:
@@ -252,15 +255,17 @@ dd <- divDyn(dats, tax="genus", bin="stg")
 ```
 
 The output of this function resembles that of the binstat() function. Variables are organized with their names.
-* Names starting with t- (e.g. t3) are taxon counts
-* Names starting with div- are diversity estimators.
-* Names starting with ori- and ext- are origination and extinction rate estimators, respectively.
-* Names starting with samp- are measures of sampling completeness.
+- Names starting with t- (e.g. t3) are taxon counts
+- Names starting with div- are diversity estimators.
+- Names starting with ori- and ext- are origination and extinction rate estimators, respectively.
+- Names starting with samp- are measures of sampling completeness.
 The abbreviations are resolved in the help file that can be accessed with
 
 ```{r divDynhelp, echo= TRUE, eval=FALSE}
 ?divDyn
 ```
+
+This file also includes all equations that are used to calculate the variables. 
 
 The most basic way to count richness over time is with range-through diversities (``divRT``). This is simply just the count of taxa that was supposed to be living in an interval (assuming presence if it was found before and after it, if it is not sampled). You can plot these with:
 
@@ -364,19 +369,12 @@ sym <- read.csv(
 
 This table also contains information about corallite integrity, coloniality, and whether the taxon is extant or extinct.
 
-Every row in this table represent a coral genus, which is designated with in the column ``genus.proper``. As the corresponding column in the PaleoDB is simply ``genus`` it is easier to merge the two dataset if these columns have the same name. Since ``genus`` is shorter, keeping that is likely more efficient.
-
-
-```{r rename, echo= TRUE, eval=TRUE}
-# rename the taxon name
-colnames(sym)[colnames(sym)=="genus.proper"] <- "genus"
-```
-
-Now it is very easy to match the two tables merge function. Stating ``all.x=TRUE`` force the keeping of all rows in the first argument of the merge funciton, which is in our case the PaleoDB. This is handy, as we'd like to assess how many fossil genera do get phototsymbiotic tags.
+Every row in this table represent a coral genus, which is designated with in the column ``genus.proper``.
+It is very easy to match the two tables with the ``merge()`` function. Stating ``all.x=TRUE`` forces the keeping of all rows in the first argument, which is in our case the PaleoDB. This is handy, as we'd like to assess how many fossil genera do get phototsymbiotic tags.
 
 ```{r merge, echo= TRUE, eval=TRUE}
 # merge the two tables
-dats <- merge(dats, sym, by="genus", all.x=TRUE)
+dats <- merge(dats, sym, by.x="genus", by.y="genus.proper", all.x=TRUE)
 
 # which are not merged?
 # occurrences
@@ -406,11 +404,11 @@ The difference in the diversity trajectories of the two group is striking, even 
 ```{r zazdiv, echo= TRUE, eval=TRUE,plot=TRUE, fig.height=5.5}
 tp(ylim=c(0,200), ylab="Raw richness")	
 lines(stages$mid, zDD$divRT, lwd=2, col="blue")
-lines(stages$mid, azDD$divRT, lwd=2, col="orange", lty=2)
+lines(stages$mid, azDD$divRT, lwd=2, col="orange")
 
 # legend function
 legZAZ <- function(...) 
-  legend(legend=c("z", "az"), col=c("blue", "orange"), lty=c(1,2), bg="white", cex=1.3, ...)
+  legend(legend=c("z", "az"), col=c("blue", "orange"), lty=c(1,1), bg="white", cex=1.3, ...)
 legZAZ("topleft")
 ```
 
@@ -422,7 +420,7 @@ But what about turnover? You can contrast the extinction rates of the two groups
 tp(ylim=c(0,1), ylab="Per capita extinctions")	
 # lines
 lines(stages$mid, zDD$extPC, lwd=2, col="blue")
-lines(stages$mid, azDD$extPC, lwd=2, col="orange", lty=2)
+lines(stages$mid, azDD$extPC, lwd=2, col="orange")
 # legend
 legZAZ("topleft")
 ```
@@ -434,7 +432,7 @@ Overall, the two series are quite similar. Z corals appear to be somewhat more a
 tp(ylim=c(0,1), ylab="Per capita originations")	
 # lines
 lines(stages$mid, zDD$oriPC, lwd=2, col="blue")
-lines(stages$mid, azDD$oriPC, lwd=2, col="orange", lty=2)
+lines(stages$mid, azDD$oriPC, lwd=2, col="orange")
 # legend
 legZAZ("topleft")
 ```
@@ -463,7 +461,7 @@ You can visualize these with dots. The results for origination rates indicate th
 ```{r zazoriSel, echo= TRUE, eval=TRUE,plot=TRUE, fig.height=5.5}
 tp(ylim=c(0,1), ylab="Per capita originations")	
 lines(stages$mid, zDD$oriPC, lwd=2, col="blue")
-lines(stages$mid, azDD$oriPC, lwd=2, col="orange", lty=2)
+lines(stages$mid, azDD$oriPC, lwd=2, col="orange")
 legZAZ("topleft")
 
 # display selectivity with points
@@ -483,7 +481,7 @@ Extinction rate results are:
 ```{r zazextSel, echo= TRUE, eval=TRUE, plot=TRUE, fig.height=5.5}
 tp(ylim=c(0,1), ylab="Per capita extinctions")	
 lines(stages$mid, zDD$extPC, lwd=2, col="blue")
-lines(stages$mid, azDD$extPC, lwd=2, col="orange", lty=2)
+lines(stages$mid, azDD$extPC, lwd=2, col="orange")
 legZAZ("topleft")
 
 # display selectivity with points
@@ -497,7 +495,7 @@ points(stages$mid[rs$ext[!groupSelector]], zDD$extPC[rs$ext[!groupSelector]],
   pch=16, col="blue", cex=2)
 ```
 
-Note that despite the apparently higher extinction rates of Z corals, the difference in the end-Createcous mass extinction is not supported by the method. The end-Pleistocene value is likely a result of the data treatmen around the recent, but the observed difference in the late Jurassic was not yet significant in our prevoius study (Kiessling and Kocsis, 2015), which points to the importance of quick reproduction or reanalysis that the divDyn package now provides.
+Note that despite the apparently higher extinction rates of Z corals, the difference in the end-Createcous mass extinction is not supported by the method. The end-Pleistocene value is likely a result of the data treatmen around the recent, but the observed difference in the late Jurassic was not significant in our prevoius study (Kiessling and Kocsis, 2015). This points to the importance of using clean data, and importance of the quick reproduction/reanalysis that the divDyn package now provides.
 
 
 # References
