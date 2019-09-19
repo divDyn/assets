@@ -292,13 +292,13 @@ prepare<- function(dat){
 	# using the online items
 		# additional treatment required for Cambrian
 			# load data
-			load(url("https://github.com/divDyn/ddPhanero/raw/master/data/	Stratigraphy/2018-08-31/cambStrat.RData"))
+			load(url("https://github.com/divDyn/ddPhanero/raw/master/data/Stratigraphy/2018-08-31/cambStrat.RData"))
 			# correct it with this function
 			source("https://github.com/divDyn/ddPhanero/raw/master/scripts/strat/2018-08-31/cambProcess.R")
 
 		# and the Ordovician
 			# load data
-			load(url("https://github.com/divDyn/ddPhanero/raw/master/data/	Stratigraphy/2018-08-31/ordStrat.RData"))
+			load(url("https://github.com/divDyn/ddPhanero/raw/master/data/Stratigraphy/2018-08-31/ordStrat.RData"))
 			# correct it with this function
 			source("https://github.com/divDyn/ddPhanero/raw/master/scripts/strat/2019-05-31/ordProcess.R")
 
