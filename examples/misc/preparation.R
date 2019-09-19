@@ -290,17 +290,22 @@ prepare<- function(dat){
 	
 		# terrible in the pre-Silurian
 	# using the online items
-		# additional treatment required for Cambrian
+		# additional treatment required for Cambrian  
+            e <- new.env()
 			# load data
-			load(url("https://github.com/divDyn/ddPhanero/raw/master/data/Stratigraphy/2018-08-31/cambStrat.RData"))
+			load(url("https://github.com/divDyn/ddPhanero/raw/master/data/Stratigraphy/2018-08-31/cambStrat.RData"), envir=environment(prepare))
+			
+		# and the Ordovician
+			# load data
+			load(url("https://github.com/divDyn/ddPhanero/raw/master/data/Stratigraphy/2018-08-31/ordStrat.RData"), envir=environment(prepare))
+		
+           
 			# correct it with this function
 			source("https://github.com/divDyn/ddPhanero/raw/master/scripts/strat/2018-08-31/cambProcess.R")
 
-		# and the Ordovician
-			# load data
-			load(url("https://github.com/divDyn/ddPhanero/raw/master/data/Stratigraphy/2018-08-31/ordStrat.RData"))
 			# correct it with this function
 			source("https://github.com/divDyn/ddPhanero/raw/master/scripts/strat/2019-05-31/ordProcess.R")
 
+            
 	return(dat)
 }
